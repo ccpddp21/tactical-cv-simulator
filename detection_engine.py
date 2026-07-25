@@ -39,43 +39,49 @@ class FrameResult:
     processing_time_ms: float
     frame_width: int
     frame_height: int
-    # Threat Classification
-    # Maps YOLO object classes to threat levels for our simulation
-    # In a real defense system this would be far more sophisticated
-    # and based on context, behavior analysis, and mission parameters
-    THREAT_CLASSIFICATION = {
-        # People
-        "person": "MEDIUM",
-        # Vehicles -- differentiated by type
-        "car": "MEDIUM",
-        "truck": "HIGH",
-        "bus": "MEDIUM",
-        "motorcycle": "MEDIUM",
-        "bicycle": "LOW",
-        # Aircraft
-        "airplane": "HIGH",
-        "helicopter": "HIGH", # YOLOv8 may classify as airplane
-        # Other
-        "boat": "MEDIUM",
-        "train": "LOW",
-        "traffic light": "LOW",
-        "backpack": "LOW",
-        "handbag": "LOW",
-        "suitcase": "MEDIUM", # Could contain items of interest
-        # Default for unclassified
-        "default": "LOW"
-    }
-    # Color coding for visualization
-    THREAT_COLORS = {
-        "HIGH": (0, 0, 255), # Red (BGR format for OpenCV)
-        "MEDIUM": (0, 165, 255), # Orange
-        "LOW": (0, 255, 0), # Green
-        "UNKNOWN": (128, 128, 128) # Gray
-    }
+
+# Threat Classification
+# Maps YOLO object classes to threat levels for our simulation
+# In a real defense system this would be far more sophisticated
+# and based on context, behavior analysis, and mission parameters
+THREAT_CLASSIFICATION = {
+    # People
+    "person": "MEDIUM",
+    # Vehicles -- differentiated by type
+    "car": "MEDIUM",
+    "truck": "HIGH",
+    "bus": "MEDIUM",
+    "motorcycle": "MEDIUM",
+    "bicycle": "LOW",
+    # Aircraft
+    "airplane": "HIGH",
+    "helicopter": "HIGH", # YOLOv8 may classify as airplane
+    # Other
+    "boat": "MEDIUM",
+    "train": "LOW",
+    "traffic light": "LOW",
+    "backpack": "LOW",
+    "handbag": "LOW",
+    "suitcase": "MEDIUM", # Could contain items of interest
+    # Default for unclassified
+    "default": "LOW"
+}
+
+# Color coding for visualization
+THREAT_COLORS = {
+    "HIGH": (0, 0, 255), # Red (BGR format for OpenCV)
+    "MEDIUM": (0, 165, 255), # Orange
+    "LOW": (0, 255, 0), # Green
+    "UNKNOWN": (128, 128, 128) # Gray
+}
+
+
 # Detection Engine
+
 class DetectionEngine:
     """
     YOLOv8-based real-time object detection engine.
+
     This class wraps the YOLO model and handles:
     - Model initialization and configuration
     - Per-frame inference
@@ -92,6 +98,7 @@ class DetectionEngine:
     ):
         """
         Initialize the detection engine.
+
         model_size: YOLO model variant (n=fastest, x=most accurate)
         confidence_threshold: Minimum confidence to report a detection
         iou_threshold: How much overlap to allow before suppressing duplicate boxes
@@ -155,6 +162,7 @@ class DetectionEngine:
         # Parse YOLO results
         # results[0] because we process one frame at a time
         for result in results[0].boxes:
+
             # Extract bounding box coordinates
             x1, y1, x2, y2 = map(int, result.xyxy[0].tolist())
             
@@ -274,26 +282,26 @@ class VideoProcessor:
     Supports: video files, webcam, and generated synthetic frames
     """
 
-def __init__(self, source):
-    """
-    source: path to video file, 0 for webcam, or 'synthetic' for simulation
-    """
-    self.source = source
-    self.cap = None
-    self.frame_number = 0
+    def __init__(self, source):
+        """
+        source: path to video file, 0 for webcam, or 'synthetic' for simulation
+        """
+        self.source = source
+        self.cap = None
+        self.frame_number = 0
 
-    if source != "synthetic":
-        self.cap = cv2.VideoCapture(source)
-        if not self.cap.isOpened():
-            raise ValueError(f"Cannot open video source: {source}")
+        if source != "synthetic":
+            self.cap = cv2.VideoCapture(source)
+            if not self.cap.isOpened():
+                raise ValueError(f"Cannot open video source: {source}")
 
-        self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 30
-        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            self.fps = self.cap.get(cv2.CAP_PROP_FPS) or 30
+            self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        print(f"[check] Video loaded: {self.width}x{self.height} @ {self.fps:.1f}fps")
-        print(f" Total frames: {self.total_frames}")
+            print(f"[check] Video loaded: {self.width}x{self.height} @ {self.fps:.1f}fps")
+            print(f" Total frames: {self.total_frames}")
 
     def read_frame(self):
         """Read the next frame. Returns (success, frame)."""
@@ -313,20 +321,22 @@ def __init__(self, source):
     @property
     def progress_pct(self) -> float:
         """Current position as percentage of total video."""
-    if not self.cap or self.total_frames <= 0:
-        return 0
-    return (self.frame_number / self.total_frames) * 100
+        if not self.cap or self.total_frames <= 0:
+            return 0
+        return (self.frame_number / self.total_frames) * 100
 
 # Quick Test
 if __name__ == "__main__":
     import sys
 
     video_source = sys.argv[1] if len(sys.argv) > 1 else "test_video.mp4"
+
     print(f"\nTesting detection engine on: {video_source}")
     print("=" * 50)
+
     engine = DetectionEngine(
-    model_size="n",
-    confidence_threshold=0.4
+        model_size="n",
+        confidence_threshold=0.4
     )
     
     processor = VideoProcessor(video_source)
@@ -337,18 +347,18 @@ if __name__ == "__main__":
         if not ret:
             break
 
-    result = engine.process_frame(frame, i)
+        result = engine.process_frame(frame, i)
 
-    if result.detections:
-        print(f"Frame {i}: {len(result.detections)} detections")
-        for det in result.detections:
-            print(
-                f" - {det.class_name} "
-                f"(conf: {det.confidence:.2f}, "
-                f"threat: {det.threat_level})"
-        )
-    else:
-        print(f"Frame {i}: No detections")
+        if result.detections:
+            print(f"Frame {i}: {len(result.detections)} detections")
+            for det in result.detections:
+                print(
+                    f" - {det.class_name} "
+                    f"(conf: {det.confidence:.2f}, "
+                    f"threat: {det.threat_level})"
+            )
+        else:
+            print(f"Frame {i}: No detections")
 
     processor.release()
     stats = engine.get_performance_stats()
