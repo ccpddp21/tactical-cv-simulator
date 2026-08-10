@@ -191,7 +191,7 @@ class TacticalSimulation:
         # Check zones in priority order
         for zone_type in priority_order:
             for zone in self.zones:
-                if zone.zone_types == zone_type:
+                if zone.zone_type == zone_type:
                     x1, y1, x2, y2 = zone.bounds
                     if x1 <= cx_pct <= x2 and y1 <= cy_pct <= y2:
                         return zone
@@ -348,29 +348,29 @@ class TacticalSimulation:
                     if (current_zone and current_zone.alert_on_dwell and entity.zone_entry_time):
                         dwell_time = current_time - entity.zone_entry_time
 
-                    if dwell_time >= current_zone.dwell_threshold_seconds:
-                        # Only alert once per threshold crossing
-                        dwell_alert_key = f"dwell_{entity_id}_{zone_name}"
-                        if dwell_alert_key not in entity.alert_generated:
-                            entity.alerts_generated.append(dwell_alert_key)
-                            severity_map = {
-                                ZoneType.EXCLUSION: "CRITICAL",
-                                ZoneType.RESTRICTED: "WARNING",
-                                ZoneType.MONITORING: "INFO"
-                            }
-                            alert = self._generate_alert(
-                                "DWELL_ALERT",
-                                entity,
-                                current_zone,
-                                f"Entity {entity_id} ({tracker.class_name}) "
-                                f"dwelling in {zone_name} "
-                                f"for {dwell_time:.0f}s",
-                                severity_map.get(current_zone.zone_type, "INFO")
-                            )
-                            new_alerts.append(alert)
+                        if dwell_time >= current_zone.dwell_threshold_seconds:
+                            # Only alert once per threshold crossing
+                            dwell_alert_key = f"dwell_{entity_id}_{zone_name}"
+                            if dwell_alert_key not in entity.alert_generated:
+                                entity.alerts_generated.append(dwell_alert_key)
+                                severity_map = {
+                                    ZoneType.EXCLUSION: "CRITICAL",
+                                    ZoneType.RESTRICTED: "WARNING",
+                                    ZoneType.MONITORING: "INFO"
+                                }
+                                alert = self._generate_alert(
+                                    "DWELL_ALERT",
+                                    entity,
+                                    current_zone,
+                                    f"Entity {entity_id} ({tracker.class_name}) "
+                                    f"dwelling in {zone_name} "
+                                    f"for {dwell_time:.0f}s",
+                                    severity_map.get(current_zone.zone_type, "INFO")
+                                )
+                                new_alerts.append(alert)
 
         # Mark entities not seen this frame as LOST
-        for entity_id, entity in self.entites.items():
+        for entity_id, entity in self.entities.items():
             if entity_id not in seen_ids:
                 if entity.state == EntityState.TRACKED:
                     entity.state = EntityState.LOST
