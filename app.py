@@ -92,13 +92,13 @@ with st.sidebar:
     with col1:
         start_btn = st.button(
             "[Play] Start",
-            use_container_width=True,
+            width='stretch',
             type="primary"
         )
     with col2:
         stop_btn = st.button(
             "[Stop] Stop",
-            use_container_width=True
+            width='stretch'
         )
 
     if start_btn:
@@ -309,7 +309,7 @@ else:
         # Display frame
         rgb_frame = cv2.cvtColor(annotated, cv2.COLOR_BGR2RGB)
         pil_image = Image.fromarray(rgb_frame)
-        video_placeholder.image(pil_image, use_container_width=True)
+        video_placeholder.image(pil_image, width='stretch')
 
         # Dashboard Data
         data = st.session_state.simulation.get_dashboard_data()
@@ -367,7 +367,7 @@ else:
                     height=250,
                     margin=dict(t=30, b=0, l=0, r=0)
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
         # Zone occupancy
         with zone_placeholder.container():
