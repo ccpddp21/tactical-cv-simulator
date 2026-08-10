@@ -282,7 +282,7 @@ else:
             color = THREAT_COLORS.get(tracker.threat_level, (128, 128, 128))
 
             x1, y1, x2, y2 = bbox
-            x1, y1, x2, y2 = map(int, (x1[0], y1[0], x2[0], y2[0]))
+            x1, y1, x2, y2 = map(int, (x1, y1, x2, y2))
 
             cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
 

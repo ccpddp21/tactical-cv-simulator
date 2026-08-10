@@ -112,7 +112,7 @@ class KalmanBoxTracker:
         """
         Convert Kalman state back to bounding box.
         """
-        x, y, s, r = z[0], z[1], z[2], z[3]
+        x, y, s, r = z[0][0], z[1][0], z[2][0], z[3][0]
         w = np.sqrt(abs(s * r))
         h = abs(s / w) if w > 0 else 0
         x1 = x - w / 2
@@ -262,7 +262,7 @@ class SORTTracker:
         for tracker in self.trackers:
             pred = tracker.predict()
             # Check if prediction is valid (no NaN values)
-            if not any(np.isNan(p) for p in pred):
+            if not any(np.isnan(p) for p in pred):
                 predicted_bboxes.append(pred)
             else:
                 to_delete.append(tracker)
