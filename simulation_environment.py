@@ -384,7 +384,7 @@ class TacticalSimulation:
         Called every frame to update the UI.
         """
         current_time = time.time()
-        elasped = current_time - self.start_time
+        elapsed = current_time - self.start_time
 
         # Activate entities (currently tracked)
         active = [
@@ -410,7 +410,7 @@ class TacticalSimulation:
         zone_occupancy = {z.name: 0 for z in self.zones}
         for entity in active:
             if entity.current_zone in zone_occupancy:
-                zone_occupancy[entity.currentzone] += 1
+                zone_occupancy[entity.current_zone] += 1
 
         return {
             "elapsed_seconds": elapsed,
