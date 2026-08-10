@@ -18,7 +18,7 @@ st.set_page_config(
     page_title="Tactical CV Simulator",
     page_icon="[Target]",
     layout="wide",
-    intial_sidebar_state="expanded"
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
@@ -120,7 +120,7 @@ with st.sidebar:
 
             w = st.session_state.processor.width
             h = st.session_state.processor.height
-            st.session_state.simulation = TacticalSimulation(width=w, height=h)
+            st.session_state.simulation = TacticalSimulation(w, h)
 
             st.session_state.running = True
             st.session_state.all_alerts = []
@@ -156,142 +156,144 @@ with st.sidebar:
     - [BLUE] INFO: Monitoring zone / Dwell
     """)
 
-    # Main Dashboard
-    st.title("[Target] Tactical Situaltional Awareness System")
+# Main Dashboard
+st.title("[Target] Tactical Situaltional Awareness System")
 
-    if not st.session_state.running:
-        st.info(
-            "Configure settings in the siderbar and click **[Play] Start** "
-            "to begin processing."
+if not st.session_state.running:
+    st.info(
+        "Configure settings in the siderbar and click **[Play] Start** "
+        "to begin processing."
+    )
+
+    # Show architecture diagram
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown("""
+        ### Input
+        Video file or webcam stream fed frame by frame into the pipeline
+        """)
+    with col2:
+        st.markdown("""
+        ### [Target] Detection
+        YOLOv8 identifies objects and classifies them with bounding boxes
+        """)
+    with col3:
+        st.markdown("""
+        ### [Signal] Tracking
+        SORT + Kalman Filter assigns persistent IDs across frames
+        """)
+    with col4:
+        st.markdown("""
+        ### [Map] Simulation
+        Zone logic generates alerts and tracks entity behavior over time
+        """)
+else:
+    # Create dashboard layout
+    col_video, col_metrics = st.columns([3, 1])
+
+    video_placeholder = col_video.empty()
+
+    with col_metrics:
+        metric_placeholder = st.empty()
+    
+    # Alert log and tactical map
+    col_alerts, col_map = st.columns([1, 1])
+
+    with col_alerts:
+        st.subheader("[ALERT] Alert Log")
+        alert_placeholder = st.empty()
+
+    with col_map:
+        st.subheader("[Map] Entity Distribution")
+        map_placeholder = st.empty()
+
+    # Zone occupancy
+    zone_placeholder = st.empty()
+
+    # Processing Loop
+    frame_count = 0
+
+    while st.session_state.running:
+        ret, frame = st.session_state.processor.read_frame()
+
+        if not ret:
+            st.info("Video complete.")
+            st.session_state.running = False
+            break
+
+        frame_count += 1
+
+        # Skip frames for speed (process every other frame)
+        if frame_count % 2 != 0:
+            continue
+
+        # Detection
+        frame_result = st.session_state.engine.process_frame(
+            frame, frame_count
         )
 
-        # Show architecture diagram
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.markdown("""
-            ### Input
-            Video file or webcam stream fed frame by frame into the pipeline
-            """)
-        with col2:
-            st.markdown("""
-            ### [Target] Detection
-            YOLOv8 identifies objects and classifies them with bounding boxes
-            """)
-        with col3:
-            st.markdown("""
-            ### [Signal] Tracking
-            SORT + Kalman Filter assigns persistent IDs across frames
-            """)
-        with col4:
-            st.markdown("""
-            ### [Map] Simulation
-            Zone logic generates alerts and tracks entity behavior over time
-            """)
-    else:
-        # Create dashboard layout
-        col_video, col_metrics = st.columns([3, 1])
+        # Tracking
+        confirmed_tracks = st.session_state.tracker.update(
+            frame_result.detections
+        )
 
-        video_placeholder = col_video.empty()
+        # Simulation Update
+        new_alerts = st.session_state.simulation.update(confirmed_tracks)
+        st.session_state.all_alerts.extend(new_alerts)
 
-        with col_metrics:
-            metric_placeholder = st.empty()
-        
-        # Alert log and tactical map
-        col_alerts, col_map = st.columns([1, 1])
+        # Annotate Frame
+        annotated = frame.copy()
 
-        with col_alerts:
-            st.subheader("[ALERT] Alert Log")
-            alert_placeholder = st.empty()
+        # Draw zone overlays
+        if show_zones:
+            h_frame, w_frame = annotated.shape[:2]
+            zone_overlay = annotated.copy()
 
-        with col_map:
-            st.subheader("[Map] Entity Distribution")
-            map_placeholder = st.empty()
+            zone_colors_map = {
+                ZoneType.EXCLUSION: (0, 0, 100),
+                ZoneType.RESTRICTED: (0, 60, 120),
+                ZoneType.MONITORING: (0, 80, 80),
+                ZoneType.CLEAR: (0, 60, 0)
+            }
 
-        # Zone occupancy
-        zone_placeholder = st.empty()
+            for zone in st.session_state.simulation.zones:
+                x1p, y1p, x2p, y2p = zone.bounds
+                x1 = int(x1p * w_frame)
+                y1 = int(y1p * h_frame)
+                x2 = int(x2p * w_frame)
+                y2 = int(y2p * h_frame)
 
-        # Processing Loop
-        frame_count = 0
-
-        while st.session_state.running:
-            ret, frame = st.session_state.processor.read_frame()
-
-            if not ret:
-                st.info("Video complete.")
-                st.session_state.running = False
-                break
-
-            frame_count += 1
-
-            # Skip frames for speed (process every other frame)
-            if frame_count % 2 != 0:
-                continue
-
-            # Detection
-            frame_result = st.session_state.engine.process_frame(
-                frame, frame_count
-            )
-
-            # Tracking
-            confirmed_tracks = st.session_state.tracker.update(
-                frame_result.detections
-            )
-
-            # Simulation Update
-            new_alerts = st.session_state.simulation.update(confirmed_tracks)
-            st.session_state.all_alerts.extend(new_alerts)
-
-            # Annotate Frame
-            annotated = frame.copy()
-
-            # Draw zone overlays
-            if show_zones:
-                h_frame, w_frame = annotated.shape[:2]
-                zone_overlay = annotated.copy()
-
-                zone_colors_map = {
-                    ZoneType.EXCLUSION: (0, 0, 100),
-                    ZoneType.RESTRICTED: (0, 60, 120),
-                    ZoneType.MONITORING: (0, 80, 80),
-                    ZoneType.CLEAR: (0, 60, 0)
-                }
-
-                for zone in st.session_state.simulation.zones:
-                    x1p, y1p, x2p, y2p = zone.bounds
-                    x1 = int(x1p * w_frame)
-                    y1 = int(y1p * h_frame)
-                    x2 = int(x2p * w_frame)
-                    y2 = int(y2p * h_frame)
-
-                    fill_color = zone_colors_map.get(zone.zone_type, (50, 50, 50))
-                    cv2.rectangle(zone_overlay, (x1, y1), (x2, y2), fill_color, -1)
-                    cv2.rectangle(annotated, (x1, y1), (x2, y2), zone.color, 2)
-                    cv2.putText(
-                        annotated, zone.name,
-                        (x1 + 5, y1 + 20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
-                        zone.color, 1
-                    )
-
-                cv2.addWeighted(zone_overlay, 0.2, annotated, 0.8, 0, annotated)
-
-            # Draw tracked entities
-            for tracker in confirmed_tracks:
-                bbox = tracker.get_bbox()
-                center = tracker.get_center()
-                color = THREAT_COLORS.get(tracker.threat_level, (128, 128, 128))
-
-                x1, y1, x2, y2 = bbox
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-
-                label = f"ID:{tracker.id} {tracker.class_name} [{tracker.threat_level}]"
+                fill_color = zone_colors_map.get(zone.zone_type, (50, 50, 50))
+                cv2.rectangle(zone_overlay, (x1, y1), (x2, y2), fill_color, -1)
+                cv2.rectangle(annotated, (x1, y1), (x2, y2), zone.color, 2)
                 cv2.putText(
-                    annotated,
-                    label,
-                    (x1, y1 - 8),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45,
-                    color, 1
+                    annotated, zone.name,
+                    (x1 + 5, y1 + 20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                    zone.color, 1
                 )
+
+            cv2.addWeighted(zone_overlay, 0.2, annotated, 0.8, 0, annotated)
+
+        # Draw tracked entities
+        for tracker in confirmed_tracks:
+            bbox = tracker.get_bbox()
+            center = tracker.get_center()
+            color = THREAT_COLORS.get(tracker.threat_level, (128, 128, 128))
+
+            x1, y1, x2, y2 = bbox
+            x1, y1, x2, y2 = map(int, (x1[0], y1[0], x2[0], y2[0]))
+
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
+
+            label = f"ID:{tracker.id} {tracker.class_name} [{tracker.threat_level}]"
+            cv2.putText(
+                annotated,
+                label,
+                (x1, y1 - 8),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45,
+                color, 1
+            )
 
             # Draw trajectory
             if show_trajectories and len(tracker.history) > 1:
